@@ -1,0 +1,370 @@
+---
+title: "Exercise Set 2"
+output:
+  pdf_document:
+    latex_engine: xelatex
+urlcolor: blue
+---
+
+-   Submit the answer via Moodle at the latest on Wednesday, 30 November 2022, at 23:59.
+-   You can answer anonymously or write your name on the answer sheet; your choice.
+-   One person should complete the assignment, but discussions and joint-solving sessions with others are encouraged. Your final solution must, however, be your own. You are not allowed to copy ready-made solutions or solutions made by other students. You are permitted to use external sources, web searches included.
+-   You can discuss the problems in the exercise workshop.
+-   Your answer will be peer-reviewed by you and randomly selected other students.
+-   The language of the assignments is English.
+-   The submitted report should be in a single Portable Document Format (pdf) file.
+-   Answer the problems in the correct order.
+-   Read Moodle's general instructions and grading criteria before starting the problems.
+-   Main source material: James et al., Chapters 4-5 and 8-9. Please feel to use other resources as well. "James et al." refers to James, Witten, Hastie, and Tibshirani, 2021. An Introduction to Statistical Learning with applications in R, 2nd edition. Springer.
+-   Notice that you can submit your answer to Moodle well before the deadline and revise it until the deadline. Therefore: please submit your solution in advance after you have solved some problems! Due to the peer review process, we cannot grant extensions to the deadline. Even though the Moodle submission may occasionally remain open after 23:59, the submission system will eventually close. If you try to submit your answers late, you will **not** get any points (including peer-review points) from this Exercise Set. You have been warned.
+-   Please double-check that the submitted pdf is appropriately formatted and, e.g., contains all figures. It is challenging to produce correctly formatted pdf files with Jupyter Notebooks: remember to check the created pdf. I recommend using R Markdown instead of Jupyter notebooks.
+-   You can solve the problems at your own pace. However, we have given a suggested schedule below ("Do this after lecture X."). If you follow the plan, you can do the problems after we have covered the topics in class.
+
+\newpage
+
+## Problem 8
+
+*[5 points]*
+
+*Do this after lecture L5.*
+
+*Topic: logistic regression, discriminative vs generative classifiers [Ch. 4]*
+
+In this problem, you will apply logistic regression (with an intercept term) to the *spam dataset* (described below).
+
+### SPAM dataset
+
+We have constructed the spam dataset by applying the [SpamAssassin spam filter](https://spamassassin.apache.org) on a subset of email messages from the [Enron-Spam dataset](http://nlp.cs.aueb.gr/software_and_datasets/Enron-Spam/index.html). SpamAssassin performs binary tests for the data (for example, "does the email have unusually many whitespace characters?") and then classifies the email as spam or ham (=not spam) based on the test outcomes. We will use five of these binary tests as covariates: `MISSING_FROM`, `FROM_ADDR_WS`, `TVD_SPACE_RATIO`, `LOTS_OF_MONEY`, and `T_FILL_THIS_FORM_SHORT` (for explanations of the tests, see the SpamAssassin documentation). The covariate vector ${\bf x}=(x_1,x_2,x_3,x_4,x_5)\in\{0,1\}^5$ is therefore a 5-dimensional binary vector. The class variable $y\in\{0,1\}$ (column SPAM in the CSV file) equals $y=1$ if the message is spam and $y=0$ if it is ham. You can find a training dataset of 100 emails from `spam_train.csv` and test data of 1000 emails from `spam_test.csv`.
+
+### Performance measures
+
+In this exercise set, you will train probabilistic classifiers which estimate the probability of class $y$ given the covariate vector ${\bf x}$, given by $\hat p(y\mid{\bf x})$. Denote by $\hat p_i=\hat p(y=1\mid{\bf x}_i)$ the estimated probability for the $i$th point in a dataset of size $n$ being spam. Let the true class of point $i$ be $y_i\in\{0,1\}$ and the predicted class be $\hat y_i=1$ if $\hat p_i\ge 0.5$ and $\hat y_i=0$ otherwise. The accuracy is then defined as: $$
+{\rm{accuracy}}=\sum\nolimits_{i=1}^n{I(y_i=\hat y_i)/n},
+$$ where $I(z)$ is the indicator function which equals unity if $z$ is true and zero otherwise. The perplexity is defined as: $$
+{\rm{perplexity}}=\exp{\left(-\sum\nolimits_{i=1}^n{\log{\hat p(y=y_i\mid{\bf x}_i)/n}}
+\right)}.
+$$ Perplexity is a rescaled variant of log-likelihood, which may be the most commonly used performance measure on probabilistic classifiers. Example values are ${\rm{perplexity}}=1$ for a perfect classifier which always predicts the probability of one to an actual class, and ${\rm{perplexity}}=2$ for coin flipping, which has a predicted class probability $\hat p=1/2$.
+
+### Task a
+
+Using one-hot encoding, train the logistic regression model without Lasso or Ridge regularisation on the training data. Then do the following:
+
+(i) Report the model coefficients.
+(ii) Compute and report the accuracy and perplexity on the training and testing data. Notice that you may get warnings about convergence; why?
+(iii) Make a plot where the x-axis is the linear response $t$ (where $t=\beta^T{\bf x}$) used by the logistic regression model, and the y-axis is the probability $\hat p(y=1\mid{\bf x})$ estimated by the model for this particular linear response.\
+      In the plot, show each data point (corresponding to an individual email) with the x-coordinate given by $\beta^T{\bf x}$ and the y-coordinate by $\approx 0$ for class $y=0$ and $\approx 1$ for class $y=1$. Plot the emails in training and testing data set differently, for example, with a different colour and shape (remember to explain which is which!).
+
+```{r, eval=TRUE}
+# R with glmnet
+
+library(glmnet)
+library(glmnetUtils)
+
+spam_train <- read.csv("../assets/spam_train.csv")
+spam_test <- read.csv("../assets/spam_test.csv")
+
+y = spam_test$SPAM
+n = length(y)
+
+## Train the model
+# Setting lambda=0 means we're not using regularization
+m <- glmnet(SPAM ~ ., spam_train, family = "binomial", alpha = 1, lambda = 0)
+
+## Regression coefficients
+cat("Coefficients without regularization: ")
+beta = coef(m)
+print(beta)
+
+## The predicted probabilities of y=1 on the test data
+phat <- predict(m, spam_test, type = "response")[, 1]
+
+# Convert the probabilities to predictions
+yhat = as.integer(phat >= 0.5)
+
+# Calculate accuracy and perplexity
+accuracy = sum(y==yhat)/n
+cat("Accuracy:", accuracy, "\n")
+perplex = exp(-sum(log(phat))/n)
+cat("Perplexity:", perplex, "\n")
+
+X <- data.matrix(spam_test[c("MISSING_FROM", "FROM_ADDR_WS", "TVD_SPACE_RATIO", "LOTS_OF_MONEY",
+                    "T_FILL_THIS_FORM_SHORT")])
+
+print(beta[1] + beta[-1]%*%t(X))
+
+```
+
+```{r, echo=FALSE, fig.asp=0.4}
+library(ggplot2)
+data <- iris[iris[, "Species"] != "setosa", c("Sepal.Length", "Petal.Width", "Species")]
+data["Species"] <- as.factor(as.character(data[["Species"]]))
+lr <- glm(Species ~ ., data, family = binomial)
+x <- seq(min(lr$linear.predictors), max(lr$linear.predictors), length.out = 200)
+# Fake train/test split
+df <- data.frame(y = rnorm(nrow(data), lr$y, 0.01), logits = lr$linear.predictors, split = c("train", "test")[1 + (rnorm(nrow(data)) > 0)])
+ggplot(df) +
+  geom_point(aes(logits, y, color = split, shape = split)) +
+  geom_line(aes(x, y), data = data.frame(x = x, y = 1 / (1 + exp(-x)))) +
+  xlab(expression(beta^T * x)) +
+  theme_classic()
+```
+
+### Task b
+
+Train a logistic regression model with Lasso regularisation. Find a value of the regularisation coefficient that performs better than the unregularised version on the test data and has some regression coefficients equal to zero. You can do this by trying various values; no need to be more sophisticated here.
+
+Report your parameters, the regression coefficients, and the accuracies and perplexities on the testing data.
+
+Example of the plot requested in Task a (using a different toy data):
+
+```{r, echo=FALSE, fig.asp=0.4}
+library(ggplot2)
+data <- iris[iris[, "Species"] != "setosa", c("Sepal.Length", "Petal.Width", "Species")]
+data["Species"] <- as.factor(as.character(data[["Species"]]))
+lr <- glm(Species ~ ., data, family = binomial)
+x <- seq(min(lr$linear.predictors), max(lr$linear.predictors), length.out = 200)
+# Fake train/test split
+df <- data.frame(y = rnorm(nrow(data), lr$y, 0.01), logits = lr$linear.predictors, split = c("train", "test")[1 + (rnorm(nrow(data)) > 0)])
+ggplot(df) +
+  geom_point(aes(logits, y, color = split, shape = split)) +
+  geom_line(aes(x, y), data = data.frame(x = x, y = 1 / (1 + exp(-x)))) +
+  xlab(expression(beta^T * x)) +
+  theme_classic()
+```
+
+\newpage
+
+## Problem 9
+
+*[6 points]*
+
+*Do this after lecture L6.*
+
+*Objective: generative Bayes classifier*
+
+In this problem, you will study the quadratic discriminant analysis (QDA) classifier. Consider a simple case where there are two classes and only one feature ($K=2$ and $p=1$).
+
+### Task a
+
+Prove that the QDA classifier is *not* linear if the class-specific variances differ ($\sigma_1^2\neq\sigma_2^2$).
+
+**Hint:** This problem is from the textbook (Problem 3, page 189). Please see the discussion in the textbook for hints and guidance. For this problem, you should follow the arguments laid out in Sect. 4.4.1 of the textbook, but without assuming that $\sigma_1^2=\sigma_2^2$.
+
+\newpage
+
+## Problem 10
+
+*[6 points]*
+
+*Do this after lecture L6.*
+
+*Objective: naive Bayes classifier*
+
+In this problem, you will study the spam dataset described earlier. Your task is to build a Naive Bayes (NB) classifier for a binary classification task of classifying the email as spam ($y=1$) or ham ($y=0$, not spam). You may not use a ready-made classifier, but you do not need to build a generic classifier (such as `naiveBayes` in the R `e1071` library) either; it is enough that your classifiers work for this particular task and data. Your classifier should use the Bernoulli distribution to model the class probabilities and distributions of the individual variables.
+
+### Task a
+
+Compute and report the class-specific Bernoulli parameters for the attributes and the class probabilities.
+
+You must estimate and report the probabilities using [Laplace smoothing](https://en.wikipedia.org/wiki/Additive_smoothing) *with a pseudocount* of 1 on the training set. You will produce 11 numbers from this task (plus 11 numbers you can obtain by taking one minus these numbers).
+
+### Task b
+
+Find the class-specific expressions for $p({\bf x}\mid y)$ needed by the NB classifier. Write down the formula required to compute the posterior probability of the class being spam $\hat p(y=1\mid{\bf x})$ as a function of the binary vector ${\bf x}=(x_1,x_2,x_3,x_4,x_5)$ and the Bernoulli parameters you computed in Task a.
+
+Remember that according to the NB assumption, the dimensions are independent within a class. Hence, you can represent the class-specific $p({\bf x}\mid y)$ likelihoods as products of five Bernoulli probabilities.
+
+### Task c
+
+Compute and report $\hat p(y=1\mid{\bf x})$ output by your NB classifier for the first, second, and sixth emails in the test set. The covariate vectors are ${\bf x}=(1,0,0,1,1)$, ${\bf x}=(1,0,1,0,0)$, and ${\bf x}=(1,0,0,1,0)$, respectively.
+
+### Task d
+
+Explain the pros and cons of a generative classifier and discriminative classifier. For this dataset, which approach would be better and why?
+
+\newpage
+
+## Problem 11
+
+*[5 points]*
+
+*Do this after lecture L6.*
+
+*Objective: Understanding discriminative vs generative learning.*
+
+Download the reference below. You **do not need to read the full paper** or understand all the details! Instead, try to find the answers to the following questions.
+
+**Reference:** Ng, Jordan (2001) On discriminative vs. generative classifiers: A comparison of logistic regression and naive Bayes. NIPS. <http://papers.nips.cc/paper/2020-on-discriminative-vs-generative-classifiers-a-comparison-of-logistic-regression-and-naive-bayes.pdf>
+
+### Task a
+
+Read the *Abstract* and *Introduction* (Sect. 1). Is discriminative learning better than generative learning, according to the authors? Justify your answer.
+
+### Task b
+
+By a "parametric family of probabilistic models", the authors mean a set of distributions where a group of parameters defines each distribution. An example of such a family is our friend, the family of normal distributions where the parameters are $\mu$ and $\Sigma$.
+
+Ng and Jordan denote by $h_{Gen}$ and $h_{Dis}$ two models chosen by optimizing different things. Which two families do the authors discuss, and what are the $(h_{Gen},h_{Dis})$ pairs for those models? Find an explanation in the paper for what "things" are being optimized, i.e., what characterizes these two models.
+
+### Task c
+
+Study Figure 1 in the paper. Explain what it suggests (see the last paragraph of the Introduction). Reflect this on the previous item.
+
+\newpage
+
+## Problem 12
+
+*[5 points]*
+
+*Do this after lecture L6.*
+
+*Objective: comparing classifiers on synthetic data, application of different classifiers*
+
+Consider a toy data set with a binary class variable $y\in\{0,1\}$ and two real-valued features $x_1,x_2\in{\mathbb{R}}$. The data are generated from the "true" model as follows: $x_1$ and $x_2$ are both sampled from a normal distribution with zero mean and unit variance, and the probability of $y$ is given by:
+
+$$
+p(y=1\mid x_1,x_2)=\sigma(1/2+2x_1-x_2-x_1x_2/2), 
+$$
+
+where $\sigma(t) = \frac{1}{1+e^{-t}}$ is the [standard logistic function](https://en.wikipedia.org/wiki/Logistic_function).
+
+### Task a
+
+Is the naive Bayes (NB) assumption valid for data generated by this procedure? Explain why or why not.
+
+### Task b
+
+We have generated 10 training data sets of sizes $n\in\{2^3,2^5,\ldots,2^{12}\}$ (`toy_train_8.csv` etc.) and one test data set of 10000 points (`toy_test.csv`).
+
+```{r, eval=FALSE, echo=FALSE}
+# You can use the R code below to generate the data.
+set.seed(42)
+sigma <- function(x) 1 / (1 + exp(-x))
+makedata <- function(n) {
+  a <- data.frame(x1 = rnorm(n), x2 = rnorm(n))
+  p <- sigma(0.5 + 2 * a$x1 - a$x2 - 0.5 * a$x1 * a$x2)
+  a$y <- 1 * (runif(n) < p)
+  a
+}
+data_test <- makedata(10000) # test data set
+data <- lapply(2^(3:12), makedata) # training data sets
+
+write.csv(data_test, "../assets/toy_test.csv", row.names = FALSE)
+for (d in data) {
+  write.csv(d, sprintf("../assets/toy_train_%d.csv", nrow(d)), row.names = FALSE)
+}
+```
+
+For each training set, train the following classifiers that output probabilities:
+
+-   Naive Bayes (NB) (e.g., `naiveBayes` from the library `e1071`)
+-   Logistic regression without an interaction term (e.g., `glm`)
+-   Logistic regression with an interaction term (e.g., `glm`)
+-   Bayes classifier that uses the actual class conditional probabilities (that you know in this case!) to compute $p(y\mid x_1,x_2)$ for a given $(x_1,x_2)$ - no probabilistic classifier can do better than this
+-   "Dummy classifier" that does not depend on ${\bf x}$. It always outputs the probability $\hat p(y=1\mid x_1,x_2)$ as the fraction of $y=1$ in the training data. "Dummy" means that the classifier output does not depend on the covariates. Including a dummy classifier in your comparison is always a good idea! One way to get a dummy classifier here is to train a logistic regression with only the intercept term.
+-   A non-linear classifier of your choosing.
+
+Make a plot (or a table) that shows the performance of different models as a function of training data set size. The performance is here the classification accuracy and the perplexity on the test set.
+
+### Task c
+
+Report the logistic regression coefficients with interaction terms for the largest training data set. How do they compare with the coefficients of the actual model that generated the data?
+
+Discuss your observations and what you can conclude.
+
+-   Which of the models above are probabilistic, discriminative, and generative?
+-   How do accuracy and perplexity (log-likelihood) compare?
+-   Is there a relation to the insights from the previous problem?
+-   Why does logistic regression with the interaction term perform so well for larger datasets?
+-   Does your dummy classifier ever outperform other classifiers, or do different classifiers ever outperform the Bayes classifier?
+
+### Instructions
+
+Here, it is useful to make a function `phat` that takes the training and testing data as input and outputs the probabilities $p(y=1\mid x_1,x_2)$ and then computes accuracy and perplexity by using these probabilities.
+
+Below, you can find one way to accomplish this in R.
+
+```{r,eval=FALSE}
+# R
+
+library(e1071)
+
+ns <- 2^(3:12)
+data <- lapply(ns, function(n) read.csv(sprintf("toy_train_%d.csv", n)))
+data_test <- read.csv("toy_test.csv")
+
+## Estimate phat. The idea is to make a function that outputs the predicted
+## probabilities and the parameters can be modified "easily" for different models.
+phat <- function(data_train,
+                 data_test,
+                 model = function(data) naiveBayes(y ~ x1 + x2, data, laplace = 1),
+                 pred = function(model, x) predict(model, x, type = "raw")[, 2]) {
+  m <- model(data_train)
+  pred(m, data_test)
+}
+
+## accuracy if we know the probabilities of ones
+accuracy <- function(p, y = data_test$y) mean(ifelse(p >= 0.5, 1, 0) == y)
+
+## perplexity if we know the probabilities of ones
+perplexity <- function(p, y = data_test$y) exp(-mean(log(ifelse(y == 1, p, 1 - p))))
+
+# collect results to data frames
+res_acc <- res_perp <- data.frame(n = sapply(data, nrow))
+
+phat_nb <- lapply(data, phat, data_test)
+res_acc$NB <- sapply(phat_nb, accuracy)
+res_perp$NB <- sapply(phat_nb, perplexity)
+```
+
+Now you have your results for the NB. Then it remains only to do the same for all other classifiers.
+
+In R you can include the interaction term in logistic regression by writing ("\*" implies that interaction should be included in the model instead of "+", which assumes only additive effects):
+
+```{r, eval=FALSE}
+# R
+
+model <- glm(y ~ x1 * x2, data[[4]], family = "binomial")
+```
+
+\newpage
+
+## Problem 15
+
+*[6 points]*
+
+*Do this after lecture L8.*
+
+*Topic: SVM [Ch. 9]*
+
+(Exercise 2 in Ch. 9.7 of James et al.)
+
+A linear decision boundary in 2 dimensions takes the form $\beta_0 + \beta_1 X + \beta_2 X_2 = 0$. We now investigate a non-linear decision boundary.
+
+### Task a
+
+Sketch the curve $(1 + X_1)^2 + (2 - X_2)^2 = 4$. On your sketch, indicate the set of points for which $(1 + X_1)^2 + (2 - X_2)^2 > 4$, and the points for which $(1 + X_1)^2 + (2 - X_2)^2 \leq 4$.
+
+### Task b
+
+Suppose a classifier assigns an observation to the blue class if $(1 + X_1)^2 + (2 - X_2)^2 > 4$, and to the red otherwise. To what class are the observations $(0,0)$, $(-1,1)$, $(2,2)$, $(3,8)$ classified?
+
+### Task c
+
+Argue that while the decision boundary of the above classifier is not linear in $X_1$ and $X_2$, it is linear in $X_1$, $X_1^2$, $X_2$, $X_2^2$.
+
+\newpage
+
+## Problem 16
+
+*[2 points]*
+
+*Objectives: self-reflection, giving feedback on the course*
+
+### Tasks
+
+-   Write a learning diary of the topics of lectures 5-8 and this exercise set.
+
+### Instructions
+
+**Guiding questions:** What did I learn? What did I not understand? Was there something relevant for other studies or (future) work? The length of your reply should be 1-3 paragraphs of text.
