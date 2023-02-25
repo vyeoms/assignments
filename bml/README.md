@@ -1,4 +1,4 @@
-# DATA20023 Computational Statistics
+# DATA20023 Bayesian Machine Learning
 
 Assignments for the Bayesian Machine Learning course at the University of Helsinki. The course's information is available [here](https://studies.helsinki.fi/courses/cu/hy-CU-134903567-2021-08-01/DATA20023/Bayesian_Machine_Learning). The learning outcomes according to the course's page:
 
