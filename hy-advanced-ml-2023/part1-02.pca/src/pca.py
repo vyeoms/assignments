@@ -22,8 +22,12 @@ def covariance_matrix(X, bias=False):
 	"""
 
 	# place your code here
-	return None
+	n = X.shape[0]
 
+	denom = n if bias else n-1
+	mu = X.mean(axis=0)
+
+	return ( (X - mu).T @ (X - mu) ) / denom
 
 def pca(X):
 	"""
@@ -46,6 +50,10 @@ def pca(X):
 	v2 = None
 
 	# place your code here
+	cov_mat = covariance_matrix(X)
+	values, vectors = eig(cov_mat)
+	v1 = X@vectors[:, values.argsort()[-1]]
+	v2 = X@vectors[:, values.argsort()[-2]]
 	return v1, v2
 
 

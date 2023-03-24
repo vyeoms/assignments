@@ -32,13 +32,12 @@ class Gradient:
 		determ uses eta, tau, and round while adagrad uses
 		eta, tau, and grads_squared.
 		"""
-
 		if self.mode == 'determ':
 			# place your code here
-			return 1
+			return self.eta/(1+self.eta*self.tau*self.round)
 		elif self.mode == 'adagrad':
 			# place your code here
-			return 1
+			return self.eta/(self.tau + np.sqrt(self.grads_squared))
 		return 1
 
 	def update_step(self, grad): 
@@ -52,6 +51,8 @@ class Gradient:
 		"""
 
 		# place your code here
+		self.round += 1
+		self.grads_squared += grad**2
 	
 	def gradient(self, X, y, w):
 		""" 
@@ -72,7 +73,8 @@ class Gradient:
 		"""
 
 		# place your code here
-		return None
+		n = y.size
+		return 2*(X@w - y).T @ X/n
 	
 	def epoch(self, X, y, w, M):
 		""" 
@@ -103,8 +105,19 @@ class Gradient:
 		"""
 
 		cnt = X.shape[0]
-		trajectory = np.zeros((int(np.ceil(cnt / M)), len(w)))
+		r = int(np.ceil(cnt / M))
+		trajectory = np.zeros((r, len(w)))
 		# place your code here
+		for i in range(r):
+			X_batch = X[M*i:M*(i+1), :]
+			y_batch = y[M*i:M*(i+1)]
+			grad = self.gradient(X_batch, y_batch, w)
+			print(grad)
+			alpha = self.step_size()
+			w = w - alpha*grad
+			trajectory[i, :] = w
+			self.update_step(grad)
+
 		return trajectory
 
 			
