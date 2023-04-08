@@ -14,6 +14,37 @@ from .utils import errormsg, ApproxTest
 
 
 
+def entropy(C):
+	with np.errstate(divide='ignore'):
+		L = np.log(C)
+		N = np.log(np.sum(C, axis = 0, keepdims=True))
+	L[np.isinf(L)] = 0 # avoids 0*-inf
+	N[np.isinf(N)] = 0 # avoids 0*-inf
+	return -np.sum(C*(L - N), axis = 0)
+
+
+
+def entropy_gain(X, y):
+	cnt, k = X.shape
+	labels = (y + 1) / 2
+	m = np.sum(labels)
+
+	P1 = np.zeros((2, k))
+	P0 = np.zeros((2, k))
+
+	cnt1 = np.sum(X, axis=0) # count(feature = 1)
+	cnt0 = cnt - cnt1        # count(feature = 0)
+
+	P1[1,:] = labels @ X      # count(feature = 1, labels = 1)
+	P1[0,:] = cnt1 - P1[1,:]  # count(feature = 1, labels = 0)
+	P0[1,:] = m - P1[1,:]     # count(feature = 0, labels = 1)
+	P0[0,:] = cnt0 - P0[1,:]  # count(feature = 0, labels = 0)
+
+	Q = np.array([cnt - m, m])
+
+	return np.around(entropy(Q) - entropy(P1) - entropy(P0), decimals=10)
+
+
 def split_count(T):
 	if type(T) is tuple:
 		return 1 + split_count(T[1]) + split_count(T[2])
@@ -65,7 +96,8 @@ class RfTester(ApproxTest):
 
 
 	@patch('numpy.random.choice', side_effect=orig_choice)
-	def test_rf(self, choice_mock):
+	@patch('src.rf.entropy_gain', wraps=entropy_gain)
+	def test_rf(self, gain_mock, choice_mock):
 		rf = load('src.rf', 'rf')
 		fit = load('src.rf', 'fit')
 
@@ -86,7 +118,9 @@ class RfTester(ApproxTest):
 		self.assertEqual(rcount, 10, "number of choice calls with replacement doesn't match treecnt")
 		self.assertEqual(rvalid, rcount, "choice is called with incorrect size, you should sample samplecnt rows")
 
-		misclass1 = np.array([0.192, 0.278, 0.132, 0.16,  0.138, 0.146, 0.122, 0.134, 0.12, 0.136])
+		misclass1 = np.array([0.192, 0.278, 0.134, 0.16, 0.122, 0.138, 0.118, 0.128, 0.122, 0.132])
+
+
 		p1 = np.loadtxt('test/votes.txt')
 
 		self.assertApprox(misclass, misclass1, errormsg("Incorrect misclassification rate (Xtrain = train.txt, Xtest = test.txt)", misclass1, misclass))
@@ -96,7 +130,8 @@ class RfTester(ApproxTest):
 
 
 	@patch('numpy.random.choice', side_effect=orig_choice)
-	def test_fit(self, choice_mock):
+	@patch('src.rf.entropy_gain', wraps=entropy_gain)
+	def test_fit(self, gain_mock, choice_mock):
 		rf = load('src.rf', 'rf')
 		fit = load('src.rf', 'fit')
 
