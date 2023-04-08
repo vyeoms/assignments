@@ -25,14 +25,34 @@ def lasso(X, y, s, reg, itercnt):
 		weights after itercnt iterations
 	"""
 
-	cnt, k = X.shape
+	d = X.shape[1]
 
 	# make a copy of the initial vector
 	# we can now change single elements of w without changing s
 	w = s.copy()
 
 	# place your code here
+	for _ in range(itercnt):
+		for j in range(d):
+			xj = X[:, j]
+			
+			w_d = np.delete(w, j) # w without the jth index
+			x_d = np.delete(X, j, axis=1) # x without the jth index
 
+			aj = 2 * np.sum(xj ** 2)
+			cj = 2 * np.sum(xj @ (y - x_d @ w_d ))
+			
+			# Update rule for coordinates
+			if cj < -reg:
+				w[j] = (cj + reg) / aj
+			elif cj > reg:
+				w[j] = (cj - reg) / aj
+			else:
+				w[j] = 0
+			
+			if j == 0:
+				w[j] = cj / aj
+	
 	return w
 
 

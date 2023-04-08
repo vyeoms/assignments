@@ -33,9 +33,24 @@ def irls(X, labels, w, itercnt):
 	err = np.zeros(itercnt + 1)
 	misclass = np.zeros(itercnt + 1)
 
-	y = labels*2 - 1 # label 0 -> y = -1, label 1 -> y = 1
+	y = 1 / (1 + np.exp(-X@w))
+	err[0] = -np.sum(labels*np.log(y) + (1-labels)*np.log(1-y))
+	misclass[0] = np.mean(labels != np.round(y))
 
-	# place your code here
+	# Newton step itrcnt times
+	for i in range(itercnt):
+		S = np.diag(y*(1 - y))
+		grad = X.T @ (y-labels)
+		H = X.T @ S @ X
+		
+		# Newton update for w
+		w = w - np.linalg.solve(H, grad)
+		
+		# Generate predictions
+		y = 1 / (1 + np.exp(-X @ w))
+		# Add a small epsilon for numerical stability
+		err[i+1] = -np.sum(labels*np.log(y+1e-12) + (1-labels)*np.log(1-y+1e-12))
+		misclass[i+1] = np.mean(labels != np.round(y))
 	
 	return w, err, misclass
 

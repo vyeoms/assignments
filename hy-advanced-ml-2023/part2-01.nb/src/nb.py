@@ -22,12 +22,19 @@ def nb(X, labels):
 		bias term corresponding to the classifier
 	"""
 
-	cnt, k = X.shape
-	w = np.zeros(k)
-	b = 0
-	# place your code here
-	return w, b
+	cnt = X.shape[0]
 
+	prior_y1 = np.sum(labels) / cnt
+	
+	# get the conditional probabilities of each feature (columns): p(x=1|y)
+	cond_y0 = np.mean(X[labels == 0], axis=0)
+	cond_y1 = np.mean(X[labels == 1], axis=0)
+	
+	# get the weights and bias: remember that log(x/a) = log(x) - log(a); log(xy) = log(x) + log(y)
+	w = np.log(cond_y1)+np.log(1-cond_y0) - np.log(1-cond_y1) - np.log(cond_y0)
+	b = np.sum(np.log(1-cond_y1) - np.log(1-cond_y0)) + np.log(prior_y1) - np.log(1-prior_y1)
+	
+	return w, b
 
 def main(argv):
 	D = np.loadtxt(argv[1])
