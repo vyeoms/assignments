@@ -23,7 +23,9 @@ def error(X, W, H, reg):
 		regularized error
 	"""
 
-	err = 0
+	err = np.linalg.norm(X[~np.isnan(X)] - (W@H)[~np.isnan(X)])**2
+	err += reg*np.linalg.norm(W)**2
+	err += reg*np.linalg.norm(H)**2
 	# place your code here
 	return err
 
@@ -31,28 +33,34 @@ def error(X, W, H, reg):
 def solve(X, W, reg):
 	"""
 	Finds H solving X ~ WH with regularization
-
+	
 	Parameters
 	----------
 	X : an array of size (n, m)
-		input data matrix, misssing values are marked as NaN
+	input data matrix, misssing values are marked as NaN
 	W : an array of size (n, k)
-		left factor
+	left factor
 	reg : real
-		weight for regularization term
-
+	weight for regularization term
+	
 	Returns
 	-------
 	H : an array of size (k, m)
-		right factor
+	right factor
 	"""
-
+	
 	m = X.shape[1]
 	k = W.shape[1]
 	H = np.zeros((k, m))
-
 	# place your code here
-
+	H_inter =np.zeros((m,k))
+	for i in range(m):
+		W_clean = W[~np.isnan(X[:,i]),:]
+		hi = np.linalg.inv(W_clean.T@W_clean+reg*np.eye(k))@W_clean.T@X[:, i][~np.isnan(X[:,i])][:, np.newaxis]
+		H_inter[i] = hi.reshape((-1,))
+	
+	H = H_inter.T
+	
 	return H
 
 
@@ -83,6 +91,10 @@ def als(X, W, reg, itercnt):
 	"""
 
 	err = np.zeros(itercnt)
+	for i in range(itercnt):
+		H = solve(X, W, reg)
+		W = solve(X.T, H.T, reg).T
+		err[i] = error(X, W, H, reg)
 
 	# place your code here
 
