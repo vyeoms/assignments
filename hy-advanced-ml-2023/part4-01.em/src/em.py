@@ -18,7 +18,9 @@ def logsumrows(X):
 	"""
 
 	# place your code here
-	return None
+	n = X.shape[0]
+	M = np.max(X, axis=1)
+	return M + np.log(np.sum(np.exp(X - M.reshape((n, 1))), axis=1))
 
 
 def computeparameters(R, X):
@@ -45,13 +47,18 @@ def computeparameters(R, X):
 	"""
 
 	k = R.shape[1]
-	dim = X.shape[1]
+	n, dim = X.shape
 
 	prior = np.zeros(k)
 	mu = np.zeros((k, dim))
 	C = np.zeros((k, dim, dim))
 
 	# place your code here
+	for i in range(k):
+		sum_Ri = np.sum(R[:,i])
+		prior[i] = sum_Ri/n
+		mu[i,:] = np.sum(R[:, i].reshape((n,1))*X, axis=0) / sum_Ri
+		C[i,:,:] = np.cov(X - mu[i,:], aweights=R[:,i], ddof=0, rowvar=False)
 
 	return prior, mu, C
 
@@ -81,13 +88,24 @@ def computeparametersdiagonal(R, X):
 	"""
 
 	k = R.shape[1]
-	dim = X.shape[1]
+	n, dim = X.shape
 
 	prior = np.zeros(k)
 	mu = np.zeros((k, dim))
 	C = np.zeros((k, dim, dim))
 
 	# place your code here
+	for i in range(k):
+		s = np.zeros(dim)
+		sum_Ri = np.sum(R[:, i])
+		prior[i] = sum_Ri/n
+		mu[i,:] = np.sum(R[:, i].reshape((n,1))*X, axis=0) / sum_Ri
+		for j in range(dim):
+			for l in range(n):
+				s[j] += R[l, i] * (X[l, j] - mu[i, j])**2
+			s[j] /= sum_Ri
+		C[i, :, :] = np.diag(s)
+	
 	return prior, mu, C
 
 
@@ -116,13 +134,23 @@ def computeparameterssame(R, X):
 	"""
 
 	k = R.shape[1]
-	cnt, dim = X.shape
+	n, dim = X.shape
 
 	prior = np.zeros(k)
 	mu = np.zeros((k, dim))
 	C = np.zeros((k, dim, dim))
+	sum_R = np.sum(R)
 
 	# place your code here
+	for i in range(k):
+		sum_Ri = np.sum(R[:,i])
+		prior[i] = sum_Ri/n
+		mu[i,:] = np.sum(R[:,i].reshape((n,1))*X, axis=0) / sum_Ri
+	
+	for i in range(n):
+		for j in range(k):
+			C += R[i][j] * (X[i]-mu[j]).reshape(-1,1)@(X[i]-mu[j]).reshape(1,-1) / sum_R
+
 	return prior, mu, C
 
 
@@ -149,15 +177,27 @@ def computeparametersspherical(R, X):
 		Optimal covariances: C[i, :, :] is the optimal covariance diagonal
 		matrix of the ith component. The numbers on the diagonals must be equal.
 	"""
-
 	k = R.shape[1]
-	cnt, dim = X.shape
+	n, dim = X.shape
 
 	prior = np.zeros(k)
 	mu = np.zeros((k, dim))
 	C = np.zeros((k, dim, dim))
 
+	sum_R = np.sum(R)
+
 	# place your code here
+	for i in range(k):
+		s = 0.
+		sum_Ri = np.sum(R[:, i])
+		prior[i] = sum_Ri/n
+		mu[i, :] = np.sum(R[:, i].reshape((n,1))*X, axis=0) / sum_Ri
+		for j in range(dim):
+			for l in range(n):
+				s += R[l, i] * (X[l, j] - mu[i, j])**2
+		s /= dim
+		C += s*np.eye(dim)/n
+	
 	return prior, mu, C
 
 
@@ -184,13 +224,21 @@ def computeresponsibilities(X, prior, mu, C):
 		jth component.
 	"""
 
+	def logGaussPDF(C, mu, x):
+		m = C.shape[0]
+		return -0.5*(np.log((2*np.pi)**m*np.linalg.det(C)) + (x-mu).reshape(-1,1).T @ np.linalg.inv(C) @ (x-mu))
+
 	k = prior.shape[0]
 	cnt = X.shape[0]
-	R = np.zeros((cnt, k))
 
 	# place your code here
+	L = np.zeros((cnt, k))
+	for i in range(cnt):
+		for j in range(k):
+			L[i, j] = np.log(prior[j]) + logGaussPDF(C[j, :, :], X[i, :], mu[j, :])
+	norm = logsumrows(L).reshape((L.shape[0], 1))
 
-	return R
+	return np.exp(L - norm)
 
 
 def em(X, R, itercnt, stats):
@@ -225,7 +273,10 @@ def em(X, R, itercnt, stats):
 
 	"""
 
-	# place your code here
+	# place your code here	
+	for _ in range(itercnt):
+		prior, mu, C = stats(R, X)
+		R = computeresponsibilities(X, prior, mu, C)
 	return R, prior, mu, C
 
 
