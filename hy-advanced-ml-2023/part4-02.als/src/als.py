@@ -31,36 +31,36 @@ def error(X, W, H, reg):
 
 
 def solve(X, W, reg):
+
 	"""
 	Finds H solving X ~ WH with regularization
-	
 	Parameters
 	----------
 	X : an array of size (n, m)
-	input data matrix, misssing values are marked as NaN
+		input data matrix, misssing values are marked as NaN
 	W : an array of size (n, k)
-	left factor
+		left factor
 	reg : real
-	weight for regularization term
-	
+		weight for regularization term
+
 	Returns
 	-------
 	H : an array of size (k, m)
-	right factor
+		right factor
 	"""
-	
+
+ 
+
 	m = X.shape[1]
 	k = W.shape[1]
-	H = np.zeros((k, m))
-	# place your code here
-	H_inter =np.zeros((m,k))
+	H = np.zeros((k, m)) 
+
 	for i in range(m):
-		W_clean = W[~np.isnan(X[:,i]),:]
-		hi = np.linalg.inv(W_clean.T@W_clean+reg*np.eye(k))@W_clean.T@X[:, i][~np.isnan(X[:,i])][:, np.newaxis]
-		H_inter[i] = hi.reshape((-1,))
-	
-	H = H_inter.T
-	
+		ind = ~np.isnan(X[:, i])
+		x = X[ind, i]
+		Wr = W[ind, :]
+		H[:, i] = np.linalg.inv(Wr.T @ Wr + reg*np.eye(k)) @ Wr.T @ x
+
 	return H
 
 
