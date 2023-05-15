@@ -97,8 +97,14 @@ def fit(X, y, featurecnt):
 		return int(np.sign(0.5 + np.sum(y))) # 0.5 trick makes sure that we never land on 0
 
 	# Select best feature
+
+	if len(feasible) < featurecnt:
+		feasible_indices = np.random.choice(feasible, len(feasible), replace=False)
+	else:
+		feasible_indices = np.random.choice(feasible, featurecnt, replace=False)
+
 	# Change the code to use sampling
-	ind = feasible[np.argmax(g[feasible])]
+	ind = feasible_indices[np.argmax(g[feasible_indices])]
 
 	# place your code here
 	
@@ -195,9 +201,17 @@ def rf(Xtrain, ltrain, treecnt, samplecnt, featurecnt, Xtest, ltest):
 
 	p = np.zeros(Xtest.shape[0])
 	misclass = np.zeros(treecnt)
+	votes = np.zeros((treecnt, Xtest.shape[0]))
 
 	# place your code here
+	for i in range(treecnt):
+		indices = np.random.choice(cnt, samplecnt, replace=True)
+		tree = fit(Xtrain[indices,:], ltrain[indices], featurecnt)
+		votes[i] = predict(tree, Xtest)
+		vote = np.sign(np.sum(votes[:i+1,:], axis=0))
+		misclass[i] = np.average(ltest != vote)
 	
+	p = votes.sum(axis=0)
 	return p, misclass
 
 

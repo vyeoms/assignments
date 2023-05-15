@@ -29,6 +29,13 @@ def nmf(X, W, H, itercnt):
 	"""
 
 	err = np.zeros(itercnt + 1)
+	err[0] = np.linalg.norm(X - W@H)**2
+	for i in range(itercnt):
+		eta = H/(W.T @ W @ H)
+		H = eta*(W.T @ X)
+		lam = W/(W @ H @ H.T)
+		W = lam*(X@H.T)
+		err[i+1] = np.linalg.norm(X - W@H)**2
 
 	# place your code here
 

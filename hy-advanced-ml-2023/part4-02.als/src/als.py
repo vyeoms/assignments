@@ -23,15 +23,17 @@ def error(X, W, H, reg):
 		regularized error
 	"""
 
-	err = 0
+	err = np.linalg.norm(X[~np.isnan(X)] - (W@H)[~np.isnan(X)])**2
+	err += reg*np.linalg.norm(W)**2
+	err += reg*np.linalg.norm(H)**2
 	# place your code here
 	return err
 
 
 def solve(X, W, reg):
+
 	"""
 	Finds H solving X ~ WH with regularization
-
 	Parameters
 	----------
 	X : an array of size (n, m)
@@ -47,11 +49,17 @@ def solve(X, W, reg):
 		right factor
 	"""
 
+ 
+
 	m = X.shape[1]
 	k = W.shape[1]
-	H = np.zeros((k, m))
+	H = np.zeros((k, m)) 
 
-	# place your code here
+	for i in range(m):
+		ind = ~np.isnan(X[:, i])
+		x = X[ind, i]
+		Wr = W[ind, :]
+		H[:, i] = np.linalg.inv(Wr.T @ Wr + reg*np.eye(k)) @ Wr.T @ x
 
 	return H
 
@@ -83,6 +91,10 @@ def als(X, W, reg, itercnt):
 	"""
 
 	err = np.zeros(itercnt)
+	for i in range(itercnt):
+		H = solve(X, W, reg)
+		W = solve(X.T, H.T, reg).T
+		err[i] = error(X, W, H, reg)
 
 	# place your code here
 

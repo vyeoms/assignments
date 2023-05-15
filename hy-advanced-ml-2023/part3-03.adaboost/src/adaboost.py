@@ -104,15 +104,27 @@ def adaboost(X, y, itercnt):
 		ith element = exponential loss of the ensemble after i + 1 iterations
 	"""
 
-	cnt, k = X.shape
+	n, k = X.shape
 
 	err_individual = np.zeros(itercnt)
 	err_ensemble = np.zeros(itercnt)
 	err_exponential = np.zeros(itercnt)
-	output = np.zeros(cnt)
+	output = np.zeros(n)
+	
+	w = np.ones(n)/n
+	betas = np.zeros((itercnt, 1))
+	preds_history = np.zeros((itercnt, n))
 
-	# place your code here
-
+	for i in range(itercnt):
+		f_m = LDA()
+		f_m.fit(X, y, w)
+		preds_history[i] = f_m.predict(X)
+		err_individual[i] = np.sum(w*(y != preds_history[i]))/np.sum(w)
+		betas[i] = 0.5*np.log((1-err_individual[i])/err_individual[i])
+		w = w*np.exp(-betas[i] * y * preds_history[i])
+		output = np.sum(betas[:i+1]*preds_history[:i+1], axis=0)
+		err_ensemble[i] = np.average( np.sign(output) != y )
+		err_exponential[i] = np.average(np.exp(-y*output))
 	
 	return output, err_individual, err_ensemble, err_exponential
 
