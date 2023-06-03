@@ -1,0 +1,1 @@
+[{"name": "test.test_rf.RfTester.test_fit", "status": "passed", "message": "", "passed": true, "points": ["3.2.1", "3.2.2", "3.2.3", "3.2.4", "3.2.5"], "backtrace": []}, {"name": "test.test_rf.RfTester.test_rf", "status": "passed", "message": "", "passed": true, "points": ["3.2.1", "3.2.2", "3.2.3", "3.2.4", "3.2.5"], "backtrace": []}]
