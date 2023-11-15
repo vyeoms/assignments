@@ -1,4 +1,4 @@
-# #DATA20047 Probabilistic Cognitive Modelling
+# DATA20047 Probabilistic Cognitive Modelling
 
 Assignments for the Probabilistic Cognitive Modelling course at the University of Helsinki. The course's information is available [here](https://studies.helsinki.fi/courses/cu/otm-8eae3a18-9201-4dfb-bedb-65c6122891e8). The learning outcomes according to the course's page:
 
