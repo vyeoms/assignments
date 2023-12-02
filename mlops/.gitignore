@@ -5,3 +5,4 @@
 **/gx/
 **/feature_store/
 **/*.sqlite3
+**/.metrics/
