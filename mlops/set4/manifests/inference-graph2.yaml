@@ -6,5 +6,19 @@ metadata:
 spec: 
   nodes: 
     ### START CONF HERE
-    
+    root:
+      routerType: Switch
+      steps:
+        - nodeName: ensembleNode
+          condition: "[@this].#(userType==\"basic\")"
+        - serviceName: bike-lgbm-3
+          condition: "[@this].#(userType==\"advanced\")"
+
+    ensembleNode:
+      routerType: Ensemble
+      steps:
+        - serviceName: bike-lgbm-1
+          name: bike-lgbm-1
+        - serviceName: bike-lgbm-2
+          name: bike-lgbm-2
     ### END CONF HERE
