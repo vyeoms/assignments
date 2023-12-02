@@ -7,5 +7,13 @@ spec:
   predictor:
     serviceAccountName: kserve-sa
     ### START CONF HERE
-    
+    minReplicas: 2
+    maxReplicas: 8
+    scaleTarget: 5
+    scaleMetric: rps
+    model:
+      modelFormat:
+        name: mlflow
+      protocolVersion: v2
+      storageUri: s3://mlflow/4/eb049d6ac84b4da195e25f77ad90c464/artifacts/lgbm-bike
     ### END CONF HERE
