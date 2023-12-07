@@ -1,0 +1,17 @@
+data:
+  prometheus.rules: |-
+    groups:
+    # An example alerting rule
+    - name: Prediction latency alert
+      rules:
+      - alert: High prediction latency
+        expr: histogram_quantile(0.9, rate(revision_app_request_latencies_bucket{isvc_name="wine-quality"}[5m])) > 500
+        for: 5s
+        labels:
+          severity: warning
+        annotations:
+          summary: High prediction latency
+
+    ### START ALERTING RULE
+    
+    ### END ALERTING RULE
