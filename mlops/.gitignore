@@ -6,3 +6,5 @@
 **/feature_store/
 **/*.sqlite3
 **/.metrics/
+**/.parquet
+**/evidently_workspace/

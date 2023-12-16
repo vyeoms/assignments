@@ -13,4 +13,4 @@ spec:
         name: mlflow
       protocolVersion: v2
       # Replace this field with the S3 URI of your own model for predicting house prices
-      storageUri: s3://mlflow/11/5c2e344a8aab483b8a269a7b22e58756/artifacts/lgbm-house
+      storageUri: s3://mlflow/9/956cd24a2b8d49dab8778fb52f2475bc/artifacts/lgbm-house

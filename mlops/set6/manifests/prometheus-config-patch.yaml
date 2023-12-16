@@ -13,5 +13,13 @@ data:
           summary: High prediction latency
 
     ### START ALERTING RULE
-    
+    - name: 4xx HTTP alert
+      rules:
+      - alert: 4xx error
+        expr: increase(revision_app_request_count{isvc_name="house-price", namespace_name="kserve-inference", response_code_class=~"4.."}[1m]) > 10
+        for: 0s
+        labels:
+          severity: critical
+        annotations:
+          summary: Many 4xx errors within the last minute
     ### END ALERTING RULE
