@@ -1,0 +1,16 @@
+apiVersion: "serving.kserve.io/v1beta1"
+kind: "InferenceService"
+metadata:
+  name: "bike-lgbm-3"
+  namespace: kserve-inference
+spec:
+  predictor:
+    serviceAccountName: kserve-sa
+    ### START CONF HERE
+    model:
+      modelFormat:
+        name: mlflow
+      protocolVersion: v2
+      storageUri: s3://mlflow/4/d328803bf37840da866d4a52450629e6/artifacts/lgbm-bike
+    ### END CONF HERE
+    
